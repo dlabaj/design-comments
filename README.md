@@ -207,10 +207,17 @@ npm run start:dev
 
 ## Development
 
+This repository contains two parts:
+
+- **`src/commenting-system/`** — the npm package (published to npm)
+- **`demo/`** — a PatternFly demo app for local testing (not published)
+
 ```bash
 npm install          # Install dependencies
-npm run start:dev    # Start dev server
-npm run build        # Production build
+npm run start:dev    # Start demo dev server (http://localhost:9000)
+npm run build        # Build demo app to demo/dist
+npm run type-check   # Type-check the package
+npm run type-check:demo  # Type-check the demo app
 ```
 
 ## License

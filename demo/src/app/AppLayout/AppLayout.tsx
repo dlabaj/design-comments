@@ -19,7 +19,7 @@ import {
 } from '@patternfly/react-core';
 import { IAppRoute, IAppRouteGroup, routes } from '@app/routes';
 import { BarsIcon, ExternalLinkAltIcon, GithubIcon } from '@patternfly/react-icons';
-import { CommentPanel, useComments, useGitHubAuth } from '@app/commenting-system';
+import { CommentPanel, useComments, useGitHubAuth } from '@design-comments';
 
 interface IAppLayout {
   children: React.ReactNode;

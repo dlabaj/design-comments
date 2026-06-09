@@ -1,47 +1,36 @@
 # Dependencies
 node_modules/
 
-# Development files  
+# Demo app (not published)
+demo/
+
+# Development files
 *.md
 !README.md
 !LICENSE
 !GITHUB_OAUTH_ENV_TEMPLATE.md
 
-# Build files
+# Build artifacts
 dist/
+demo/dist/
 build/
 stats.json
+coverage/
 
 # Development configs
 .editorconfig
 .eslintrc.js
 .prettierignore
 .prettierrc
-webpack.dev.js
-webpack.common.js
 tsconfig.json
 vitest.config.ts
-stylePaths.js
-webpack.prod.js
-
-# Source files not needed in package
-src/app/Dashboard/
-src/app/NotFound/
-src/app/Settings/
-src/app/Support/
-src/app/app.css
-src/app/app.test.tsx
-src/app/bgimages/
-src/app/utils/
-src/favicon.png
-src/index.tsx
-src/typings.d.ts
 
 # Tests
 **/*.test.ts
 **/*.test.tsx
 **/*.spec.ts
 **/*.spec.tsx
+**/__snapshots__/
 
 # Git
 .git/
