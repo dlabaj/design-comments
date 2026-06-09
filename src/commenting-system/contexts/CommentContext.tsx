@@ -442,18 +442,12 @@ export const CommentProvider: React.FunctionComponent<{ children: React.ReactNod
           const issueUrl = issue?.html_url as string | undefined;
           if (!issueNumber) continue;
 
-          const metadata = parseMetadataFromIssueBody(issue?.body || '');
+          const metadata = parseMetadataFromIssueBody((issue?.body as string) || '');
 
           const commentsResult = await githubAdapter.fetchIssueComments(issueNumber);
           const ghComments = commentsResult.success && commentsResult.data ? commentsResult.data : [];
 
-          const mappedComments: Comment[] = (Array.isArray(ghComments) ? ghComments : []).map(
-            (c: {
-              id: number;
-              body?: string;
-              user?: { login?: string };
-              created_at?: string;
-            }) => {
+          const mappedComments: Comment[] = (Array.isArray(ghComments) ? ghComments : []).map((c) => {
             const rawBody = c?.body || '';
             return {
               id: `ghc-${c.id}`,
@@ -469,8 +463,8 @@ export const CommentProvider: React.FunctionComponent<{ children: React.ReactNod
           for (const c of mappedComments) {
             if (c.parentGitHubCommentId) continue;
             const raw = (Array.isArray(ghComments) ? ghComments : []).find(
-              (x: { id?: number; body?: string }) => x?.id === c.githubCommentId,
-            )?.body || '';
+              (x) => x?.id === c.githubCommentId,
+            )?.body as string || '';
             const inferred = inferReplyParentFromQuote(raw, mappedComments);
             if (inferred && inferred !== c.githubCommentId) {
               c.parentGitHubCommentId = inferred;

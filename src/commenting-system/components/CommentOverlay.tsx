@@ -158,8 +158,10 @@ export const CommentOverlay: React.FunctionComponent = () => {
       // Only use component name if this element IS a React component (not native)
       if (type && typeof type !== 'string') {
         const componentName = getComponentName(fiber);
-        const displayName = (typeof type === 'function' && (type.displayName || type.name)) ||
-          (type?.$$typeof === Symbol.for('react.forward_ref') && (type.render?.displayName || type.render?.name)) ||
+        const componentTypeObj = type as { $$typeof?: symbol; render?: { displayName?: string; name?: string } };
+        const fn = type as { displayName?: string; name?: string };
+        const displayName = (typeof type === 'function' && (fn.displayName || fn.name)) ||
+          (componentTypeObj?.$$typeof === Symbol.for('react.forward_ref') && (componentTypeObj.render?.displayName || componentTypeObj.render?.name)) ||
           undefined;
         previewName = componentName || displayName || elementDescription;
       }

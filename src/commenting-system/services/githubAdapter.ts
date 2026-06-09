@@ -65,7 +65,27 @@ export const diagnoseGitHubSetup = () => {
   };
 };
 
-export interface GitHubResult<T = any> {
+interface GitHubApiResponse {
+  [key: string]: unknown;
+}
+
+export interface GitHubIssue extends GitHubApiResponse {
+  number: number;
+  title?: string;
+  state?: string;
+  html_url?: string;
+  body?: string;
+  labels?: unknown[];
+}
+
+export interface GitHubComment extends GitHubApiResponse {
+  id: number;
+  body?: string;
+  user?: { login?: string };
+  created_at?: string;
+}
+
+export interface GitHubResult<T = GitHubApiResponse> {
   success: boolean;
   data?: T;
   error?: string;
@@ -81,7 +101,7 @@ export interface GitHubIssueSummary {
   labels: unknown[];
 }
 
-async function githubProxyRequest(method: string, endpoint: string, data?: any): Promise<any> {
+async function githubProxyRequest(method: string, endpoint: string, data?: unknown): Promise<GitHubApiResponse> {
   const token = getStoredToken();
   if (!token) {
     throw new Error('Not authenticated with GitHub');
@@ -141,18 +161,18 @@ const base64DecodeUtf8 = (input: string): string => {
   return decodeURIComponent(escape(atob(input)));
 };
 
-const getLabelNames = (issue: any): string[] => {
+const getLabelNames = (issue: GitHubApiResponse): string[] => {
   const labels = issue?.labels;
   if (!Array.isArray(labels)) return [];
   return labels
-    .map((l: any) => (typeof l === 'string' ? l : l?.name))
-    .filter((n: any) => typeof n === 'string');
+    .map((l: unknown) => (typeof l === 'string' ? l : (l as Record<string, unknown>)?.name))
+    .filter((n: unknown): n is string => typeof n === 'string');
 };
 
-const issueHasAnyVersion = (issue: any): boolean => {
+const issueHasAnyVersion = (issue: GitHubApiResponse): boolean => {
   const labelNames = getLabelNames(issue);
   if (labelNames.some((n) => n.startsWith('version:'))) return true;
-  const body: string = issue?.body || '';
+  const body: string = (issue?.body as string) || '';
   return body.includes('Version:');
 };
 
@@ -206,13 +226,13 @@ export const githubAdapter = {
         // ignore label failures
       }
 
-      return { success: true, data };
-    } catch (e: any) {
-      return { success: false, error: e?.message || 'Failed to create issue' };
+      return { success: true, data: data as { number: number; html_url: string } };
+    } catch (e: unknown) {
+      return { success: false, error: (e as Error)?.message || 'Failed to create issue' };
     }
   },
 
-  async createComment(issueNumber: number, body: string): Promise<GitHubResult> {
+  async createComment(issueNumber: number, body: string): Promise<GitHubResult<GitHubApiResponse>> {
     if (!isGitHubConfigured()) return { success: false, error: 'Please sign in with GitHub' };
     const owner = getEnv('VITE_GITHUB_OWNER');
     const repo = getEnv('VITE_GITHUB_REPO');
@@ -220,12 +240,12 @@ export const githubAdapter = {
     try {
       const data = await githubProxyRequest('POST', `/repos/${owner}/${repo}/issues/${issueNumber}/comments`, { body });
       return { success: true, data };
-    } catch (e: any) {
-      return { success: false, error: e?.message || 'Failed to create comment' };
+    } catch (e: unknown) {
+      return { success: false, error: (e as Error)?.message || 'Failed to create comment' };
     }
   },
 
-  async fetchIssuesForRoute(route: string): Promise<GitHubResult<any[]>> {
+  async fetchIssuesForRoute(route: string): Promise<GitHubResult<GitHubIssue[]>> {
     return githubAdapter.fetchIssuesForRouteAndVersion(route);
   },
 
@@ -246,12 +266,12 @@ export const githubAdapter = {
           labels: Array.isArray(data.labels) ? data.labels : [],
         },
       };
-    } catch (e: any) {
-      return { success: false, error: e?.message || 'Failed to fetch issue' };
+    } catch (e: unknown) {
+      return { success: false, error: (e as Error)?.message || 'Failed to fetch issue' };
     }
   },
 
-  async fetchIssuesForRouteAndVersion(route: string, version?: string): Promise<GitHubResult<any[]>> {
+  async fetchIssuesForRouteAndVersion(route: string, version?: string): Promise<GitHubResult<GitHubIssue[]>> {
     if (!isGitHubConfigured()) return { success: false, error: 'Please sign in with GitHub' };
     const owner = getEnv('VITE_GITHUB_OWNER');
     const repo = getEnv('VITE_GITHUB_REPO');
@@ -262,18 +282,18 @@ export const githubAdapter = {
       );
       // Filter by metadata OR labels (route:${route}), and optionally by version
       const filtered = (Array.isArray(data) ? data : [])
-        .filter((issue: any) => {
-          const body: string = issue?.body || '';
+        .filter((issue: GitHubApiResponse) => {
+          const body: string = (issue?.body as string) || '';
           const labels = getLabelNames(issue);
           const bodyMatch = body.includes(`Route: \`${route}\``);
           const labelMatch = labels.includes(`route:${route}`);
           return bodyMatch || labelMatch;
         })
-        .filter((issue: any) => {
+        .filter((issue: GitHubApiResponse) => {
           if (!version) return true;
 
           const labels = getLabelNames(issue);
-          const body: string = issue?.body || '';
+          const body: string = (issue?.body as string) || '';
           const versionLabelMatch = labels.includes(`version:${version}`);
           const bodyVersionMatch = body.includes(`Version: \`${version}\``);
 
@@ -282,13 +302,13 @@ export const githubAdapter = {
 
           return versionLabelMatch || bodyVersionMatch;
         });
-      return { success: true, data: filtered };
-    } catch (e: any) {
-      return { success: false, error: e?.message || 'Failed to fetch issues' };
+      return { success: true, data: filtered as GitHubIssue[] };
+    } catch (e: unknown) {
+      return { success: false, error: (e as Error)?.message || 'Failed to fetch issues' };
     }
   },
 
-  async fetchIssueComments(issueNumber: number): Promise<GitHubResult<any[]>> {
+  async fetchIssueComments(issueNumber: number): Promise<GitHubResult<GitHubComment[]>> {
     if (!isGitHubConfigured()) return { success: false, error: 'Please sign in with GitHub' };
     const owner = getEnv('VITE_GITHUB_OWNER');
     const repo = getEnv('VITE_GITHUB_REPO');
@@ -297,57 +317,57 @@ export const githubAdapter = {
         'GET',
         `/repos/${owner}/${repo}/issues/${issueNumber}/comments?per_page=100`,
       );
-      return { success: true, data };
-    } catch (e: any) {
-      return { success: false, error: e?.message || 'Failed to fetch issue comments' };
+      return { success: true, data: data as unknown as GitHubComment[] };
+    } catch (e: unknown) {
+      return { success: false, error: (e as Error)?.message || 'Failed to fetch issue comments' };
     }
   },
 
-  async updateComment(commentId: number, body: string): Promise<GitHubResult> {
+  async updateComment(commentId: number, body: string): Promise<GitHubResult<GitHubApiResponse>> {
     if (!isGitHubConfigured()) return { success: false, error: 'Please sign in with GitHub' };
     const owner = getEnv('VITE_GITHUB_OWNER');
     const repo = getEnv('VITE_GITHUB_REPO');
     try {
       const data = await githubProxyRequest('PATCH', `/repos/${owner}/${repo}/issues/comments/${commentId}`, { body });
       return { success: true, data };
-    } catch (e: any) {
-      return { success: false, error: e?.message || 'Failed to update comment' };
+    } catch (e: unknown) {
+      return { success: false, error: (e as Error)?.message || 'Failed to update comment' };
     }
   },
 
-  async deleteComment(commentId: number): Promise<GitHubResult> {
+  async deleteComment(commentId: number): Promise<GitHubResult<GitHubApiResponse>> {
     if (!isGitHubConfigured()) return { success: false, error: 'Please sign in with GitHub' };
     const owner = getEnv('VITE_GITHUB_OWNER');
     const repo = getEnv('VITE_GITHUB_REPO');
     try {
       await githubProxyRequest('DELETE', `/repos/${owner}/${repo}/issues/comments/${commentId}`);
       return { success: true, data: {} };
-    } catch (e: any) {
-      return { success: false, error: e?.message || 'Failed to delete comment' };
+    } catch (e: unknown) {
+      return { success: false, error: (e as Error)?.message || 'Failed to delete comment' };
     }
   },
 
-  async closeIssue(issueNumber: number): Promise<GitHubResult> {
+  async closeIssue(issueNumber: number): Promise<GitHubResult<GitHubApiResponse>> {
     if (!isGitHubConfigured()) return { success: false, error: 'Please sign in with GitHub' };
     const owner = getEnv('VITE_GITHUB_OWNER');
     const repo = getEnv('VITE_GITHUB_REPO');
     try {
       const data = await githubProxyRequest('PATCH', `/repos/${owner}/${repo}/issues/${issueNumber}`, { state: 'closed' });
       return { success: true, data };
-    } catch (e: any) {
-      return { success: false, error: e?.message || 'Failed to close issue' };
+    } catch (e: unknown) {
+      return { success: false, error: (e as Error)?.message || 'Failed to close issue' };
     }
   },
 
-  async reopenIssue(issueNumber: number): Promise<GitHubResult> {
+  async reopenIssue(issueNumber: number): Promise<GitHubResult<GitHubApiResponse>> {
     if (!isGitHubConfigured()) return { success: false, error: 'Please sign in with GitHub' };
     const owner = getEnv('VITE_GITHUB_OWNER');
     const repo = getEnv('VITE_GITHUB_REPO');
     try {
       const data = await githubProxyRequest('PATCH', `/repos/${owner}/${repo}/issues/${issueNumber}`, { state: 'open' });
       return { success: true, data };
-    } catch (e: any) {
-      return { success: false, error: e?.message || 'Failed to reopen issue' };
+    } catch (e: unknown) {
+      return { success: false, error: (e as Error)?.message || 'Failed to reopen issue' };
     }
   },
 
@@ -357,17 +377,17 @@ export const githubAdapter = {
     const repo = getEnv('VITE_GITHUB_REPO');
     try {
       const data = await githubProxyRequest('GET', `/repos/${owner}/${repo}/contents/${encodePath(path)}`);
-      const content = typeof data?.content === 'string' ? data.content.replace(/\n/g, '') : '';
-      const sha = data?.sha as string | undefined;
+      const content = typeof data.content === 'string' ? data.content.replace(/\n/g, '') : '';
+      const sha = data.sha as string | undefined;
       if (!content || !sha) return { success: true, data: null };
       const text = base64DecodeUtf8(content);
       return { success: true, data: { text, sha } };
-    } catch (e: any) {
+    } catch (e: unknown) {
       // If file doesn't exist yet, treat as empty
-      if (String(e?.message || '').toLowerCase().includes('not found')) {
+      if (String((e as Error)?.message || '').toLowerCase().includes('not found')) {
         return { success: true, data: null };
       }
-      return { success: false, error: e?.message || 'Failed to read repo file' };
+      return { success: false, error: (e as Error)?.message || 'Failed to read repo file' };
     }
   },
 
@@ -381,7 +401,7 @@ export const githubAdapter = {
     const owner = getEnv('VITE_GITHUB_OWNER');
     const repo = getEnv('VITE_GITHUB_REPO');
     try {
-      const payload: any = {
+      const payload: Record<string, string> = {
         message: params.message,
         content: base64EncodeUtf8(params.text),
       };
@@ -391,10 +411,10 @@ export const githubAdapter = {
         `/repos/${owner}/${repo}/contents/${encodePath(params.path)}`,
         payload,
       );
-      const newSha = data?.content?.sha as string | undefined;
+      const newSha = ((data as { content?: { sha?: string } }).content?.sha) as string | undefined;
       return { success: true, data: { sha: newSha || params.sha || '' } };
-    } catch (e: any) {
-      return { success: false, error: e?.message || 'Failed to write repo file' };
+    } catch (e: unknown) {
+      return { success: false, error: (e as Error)?.message || 'Failed to write repo file' };
     }
   },
 };

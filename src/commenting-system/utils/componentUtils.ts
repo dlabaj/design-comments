@@ -5,17 +5,25 @@
 
 import { ComponentMetadata } from '../types';
 
+interface ReactFiber {
+  type?: unknown;
+  memoizedProps?: unknown;
+  pendingProps?: unknown;
+  key?: string | number | null;
+  [key: string]: unknown;
+}
+
 /**
  * Get React fiber node from a DOM element
  * Uses React DevTools internal API if available, otherwise traverses up the DOM tree
  */
-export function getFiberFromElement(element: Element | null): any {
+export function getFiberFromElement(element: Element | null): ReactFiber | null {
   if (!element) return null;
 
   // Try React DevTools internal API first (if DevTools is installed)
   const key = Object.keys(element).find((k) => k.startsWith('__reactFiber') || k.startsWith('__reactInternalInstance'));
   if (key) {
-    return (element as any)[key];
+    return (element as unknown as Record<string, ReactFiber>)[key];
   }
 
   // Fallback: traverse up the DOM tree to find a React fiber
@@ -24,7 +32,7 @@ export function getFiberFromElement(element: Element | null): any {
     const keys = Object.keys(current);
     const fiberKey = keys.find((k) => k.startsWith('__reactFiber') || k.startsWith('__reactInternalInstance'));
     if (fiberKey) {
-      return (current as any)[fiberKey];
+      return (current as unknown as Record<string, ReactFiber>)[fiberKey];
     }
     current = current.parentNode;
   }
@@ -32,10 +40,18 @@ export function getFiberFromElement(element: Element | null): any {
   return null;
 }
 
+interface ReactComponentType {
+  $$typeof?: symbol;
+  displayName?: string;
+  name?: string;
+  render?: { displayName?: string; name?: string };
+  type?: unknown;
+}
+
 /**
  * Get component name from a React fiber node
  */
-export function getComponentName(fiber: any): string | undefined {
+export function getComponentName(fiber: ReactFiber | null): string | undefined {
   if (!fiber) return undefined;
 
   // Try different fiber types
@@ -44,19 +60,22 @@ export function getComponentName(fiber: any): string | undefined {
 
   // Function component
   if (typeof type === 'function') {
-    return type.displayName || type.name || 'Anonymous';
+    const fn = type as { displayName?: string; name?: string };
+    return fn.displayName || fn.name || 'Anonymous';
   }
 
   // Forward ref
-  if (type.$$typeof === Symbol.for('react.forward_ref')) {
-    return type.render?.displayName || type.render?.name || 'ForwardRef';
+  const componentType = type as ReactComponentType;
+  if (componentType.$$typeof === Symbol.for('react.forward_ref')) {
+    return componentType.render?.displayName || componentType.render?.name || 'ForwardRef';
   }
 
   // Memo
-  if (type.$$typeof === Symbol.for('react.memo')) {
-    const innerType = type.type;
+  if (componentType.$$typeof === Symbol.for('react.memo')) {
+    const innerType = componentType.type;
     if (typeof innerType === 'function') {
-      return innerType.displayName || innerType.name || 'Memo';
+      const fn = innerType as { displayName?: string; name?: string };
+      return fn.displayName || fn.name || 'Memo';
     }
     return 'Memo';
   }
@@ -72,7 +91,7 @@ export function getComponentName(fiber: any): string | undefined {
 /**
  * Get component type (function, class, etc.)
  */
-function getComponentType(fiber: any): ComponentMetadata['componentType'] {
+function getComponentType(fiber: ReactFiber | null): ComponentMetadata['componentType'] {
   if (!fiber) return 'unknown';
 
   const type = fiber.type;
@@ -80,21 +99,23 @@ function getComponentType(fiber: any): ComponentMetadata['componentType'] {
 
   if (typeof type === 'function') {
     // Check if it's a class component
-    if (type.prototype && type.prototype.isReactComponent) {
+    const fn = type as { prototype?: { isReactComponent?: boolean } };
+    if (fn.prototype && fn.prototype.isReactComponent) {
       return 'class';
     }
     return 'function';
   }
 
-  if (type.$$typeof === Symbol.for('react.forward_ref')) {
+  const componentType = type as ReactComponentType;
+  if (componentType.$$typeof === Symbol.for('react.forward_ref')) {
     return 'forwardRef';
   }
 
-  if (type.$$typeof === Symbol.for('react.memo')) {
+  if (componentType.$$typeof === Symbol.for('react.memo')) {
     return 'memo';
   }
 
-  if (type.$$typeof === Symbol.for('react.lazy')) {
+  if (componentType.$$typeof === Symbol.for('react.lazy')) {
     return 'lazy';
   }
 
@@ -122,19 +143,21 @@ export function getComponentMetadata(element: Element | null): ComponentMetadata
   const props = fiber.memoizedProps || fiber.pendingProps || undefined;
 
   // Get key
-  const key = fiber.key !== null && fiber.key !== undefined ? fiber.key : undefined;
+  const key = fiber.key !== null && fiber.key !== undefined ? (fiber.key as string | number) : undefined;
 
   // Get display name
   const type = fiber.type;
+  const componentTypeObj = type as ReactComponentType;
+  const fn = type as { displayName?: string; name?: string };
   const displayName =
-    (typeof type === 'function' && (type.displayName || type.name)) ||
-    (type?.$$typeof === Symbol.for('react.forward_ref') && (type.render?.displayName || type.render?.name)) ||
+    (typeof type === 'function' && (fn.displayName || fn.name)) ||
+    (componentTypeObj?.$$typeof === Symbol.for('react.forward_ref') && (componentTypeObj.render?.displayName || componentTypeObj.render?.name)) ||
     undefined;
 
   return {
     componentName,
     componentType,
-    props: props ? sanitizeProps(props) : undefined,
+    props: props ? sanitizeProps(props as Record<string, unknown>) : undefined,
     displayName,
     key,
   };
@@ -166,10 +189,14 @@ function sanitizeProps(props: Record<string, unknown>): Record<string, unknown> 
       if (value instanceof Map) return `[Map(${value.size})]`;
 
       // React elements
-      if ((value as any).$$typeof) {
-        const type = (value as any).type;
+      const reactEl = value as ReactComponentType;
+      if (reactEl.$$typeof) {
+        const type = reactEl.type;
         if (typeof type === 'string') return `<${type} />`;
-        if (typeof type === 'function') return `<${type.displayName || type.name || 'Component'} />`;
+        if (typeof type === 'function') {
+          const fn = type as { displayName?: string; name?: string };
+          return `<${fn.displayName || fn.name || 'Component'} />`;
+        }
         return '[React Element]';
       }
 
