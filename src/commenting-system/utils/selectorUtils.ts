@@ -3,7 +3,7 @@
  * Now includes React component detection for component-based commenting
  */
 
-import { getComponentMetadata, getComponentPath, findNearestComponentElement } from './componentUtils';
+import { findNearestComponentElement, getComponentMetadata, getComponentPath } from './componentUtils';
 import { ComponentMetadata } from '../types';
 
 /**

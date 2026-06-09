@@ -1,7 +1,6 @@
 {
   "compilerOptions": {
     "baseUrl": ".",
-    "rootDir": "src",
     "outDir": "dist",
     "module": "esnext",
     "target": "es5",
@@ -18,11 +17,14 @@
     "allowSyntheticDefaultImports": true,
     "strict": true,
     "paths": {
-      "@design-comments/*": ["src/commenting-system/*"]
+      "@app/*": ["src/app/*"],
+      "@design-comments": ["../src/commenting-system"],
+      "@design-comments/*": ["../src/commenting-system/*"],
+      "@assets/*": ["../node_modules/@patternfly/react-core/dist/styles/assets/*"]
     },
     "importHelpers": true,
     "skipLibCheck": true
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
-  "exclude": ["node_modules", "demo"]
+  "exclude": ["node_modules"]
 }

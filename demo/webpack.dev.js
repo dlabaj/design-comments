@@ -6,6 +6,7 @@ const common = require('./webpack.common.js');
 const { stylePaths } = require('./stylePaths');
 const HOST = process.env.HOST || 'localhost';
 const PORT = process.env.PORT || '9000';
+const repoRoot = path.resolve(__dirname, '..');
 
 module.exports = merge(common('development'), {
   mode: 'development',
@@ -32,9 +33,9 @@ module.exports = merge(common('development'), {
       try {
         // eslint-disable-next-line global-require
         const dotenv = require('dotenv');
-        const envResult = dotenv.config({ path: path.resolve(__dirname, '.env') });
+        const envResult = dotenv.config({ path: path.resolve(repoRoot, '.env') });
         // IMPORTANT: allow server-only secrets to override anything accidentally present in `.env` or the shell env.
-        const envServerResult = dotenv.config({ path: path.resolve(__dirname, '.env.server'), override: true });
+        const envServerResult = dotenv.config({ path: path.resolve(repoRoot, '.env.server'), override: true });
         if (envServerResult.error && envServerResult.error.code !== 'ENOENT') {
           // eslint-disable-next-line no-console
           console.warn('[Commenting System] Warning loading .env.server:', envServerResult.error.message);

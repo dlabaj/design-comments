@@ -12,7 +12,7 @@ import {
   Title,
 } from '@patternfly/react-core';
 import { AngleDownIcon, AngleRightIcon, SearchIcon } from '@patternfly/react-icons';
-import { useComments } from '@app/commenting-system';
+import { useComments } from '@design-comments';
 
 const Comments: React.FunctionComponent = () => {
   const navigate = useNavigate();

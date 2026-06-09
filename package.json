@@ -1,20 +1,19 @@
 {
-  "name": "design-comments",
-  "version": "3.8.0",
+  "name": "@patternfly/design-comments",
+  "version": "1.0.0",
   "description": "A commenting system for PatternFly React applications that allows designers and developers to add comments directly on design pages, sync with GitHub Issues, and link Jira tickets.",
-  "homepage": "https://www.npmjs.com/package/design-comments",
   "repository": {
     "type": "git",
-    "url": "https://github.com/JustinXHale/design-comments.git"
+    "url": "https://github.com/patternfly/design-comments.git"
   },
   "license": "MIT",
-  "main": "src/app/commenting-system/index.ts",
-  "types": "src/app/commenting-system/index.ts",
+  "main": "src/commenting-system/index.ts",
+  "types": "src/commenting-system/index.ts",
   "bin": {
     "design-comments": "scripts/cli.js"
   },
   "files": [
-    "src/app/commenting-system/",
+    "src/commenting-system/",
     "scripts/",
     "README.md",
     "LICENSE",
@@ -23,21 +22,22 @@
   "scripts": {
     "postinstall": "node scripts/postinstall.js || true",
     "preuninstall": "node scripts/auto-remove.js || true",
-    "prebuild": "npm run type-check && npm run clean",
-    "build": "webpack --config webpack.prod.js",
-    "start": "sirv dist --cors --single --host --port 8080",
-    "start:dev": "webpack serve --color --progress --config webpack.dev.js",
+    "prebuild": "npm run type-check && npm run type-check:demo && npm run clean",
+    "build": "webpack --config demo/webpack.prod.js",
+    "start": "sirv demo/dist --cors --single --host --port 8080",
+    "start:dev": "webpack serve --color --progress --config demo/webpack.dev.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "eslint": "eslint --ext .tsx,.js ./src/",
+    "eslint": "eslint --ext .tsx,.ts ./src/ ./demo/",
     "lint": "npm run eslint",
-    "format": "prettier --check --write ./src/**/*.{tsx,ts}",
+    "format": "prettier --check --write ./src/**/*.{tsx,ts} ./demo/**/*.{tsx,ts}",
     "type-check": "tsc --noEmit",
-    "ci-checks": "npm run type-check && npm run lint && npm run test:coverage",
-    "build:bundle-profile": "webpack --config webpack.prod.js --profile --json > stats.json",
+    "type-check:demo": "tsc --noEmit -p demo/tsconfig.json",
+    "ci-checks": "npm run type-check && npm run type-check:demo && npm run lint && npm run test:coverage",
+    "build:bundle-profile": "webpack --config demo/webpack.prod.js --profile --json > stats.json",
     "bundle-profile:analyze": "npm run build:bundle-profile && webpack-bundle-analyzer ./stats.json",
-    "clean": "rimraf dist"
+    "clean": "rimraf demo/dist"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",

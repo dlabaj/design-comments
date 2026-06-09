@@ -8,7 +8,7 @@ export const getEnv = (key: string): string | undefined => {
     if (typeof process !== 'undefined' && process.env) {
       return process.env[key];
     }
-  } catch (e) {
+  } catch {
     // process might be defined but accessing it throws an error
   }
   return undefined;

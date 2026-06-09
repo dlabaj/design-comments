@@ -1,5 +1,6 @@
 **/node_modules
 dist
+demo/dist
 yarn-error.log
 yarn.lock
 stats.json
