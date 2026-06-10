@@ -7,6 +7,9 @@
     "url": "https://github.com/patternfly/design-comments.git"
   },
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "src/commenting-system/index.ts",
   "types": "src/commenting-system/index.ts",
   "bin": {
@@ -20,6 +23,7 @@
     "GITHUB_OAUTH_ENV_TEMPLATE.md"
   ],
   "scripts": {
+    "prepare": "husky",
     "postinstall": "node scripts/postinstall.js || true",
     "preuninstall": "node scripts/auto-remove.js || true",
     "prebuild": "npm run type-check && npm run type-check:demo && npm run clean",
@@ -37,9 +41,16 @@
     "ci-checks": "npm run type-check && npm run type-check:demo && npm run lint && npm run test:coverage",
     "build:bundle-profile": "webpack --config demo/webpack.prod.js --profile --json > stats.json",
     "bundle-profile:analyze": "npm run build:bundle-profile && webpack-bundle-analyzer ./stats.json",
-    "clean": "rimraf demo/dist"
+    "clean": "rimraf demo/dist",
+    "semantic-release": "semantic-release"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.0.2",
+    "@commitlint/config-conventional": "^21.0.2",
+    "@semantic-release/commit-analyzer": "^13.0.1",
+    "@semantic-release/github": "^12.0.8",
+    "@semantic-release/npm": "^13.1.5",
+    "@semantic-release/release-notes-generator": "^14.1.1",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",
     "@testing-library/user-event": "^14.6.1",
@@ -57,6 +68,7 @@
     "eslint-plugin-react": "^7.37.2",
     "eslint-plugin-react-hooks": "^5.0.0",
     "html-webpack-plugin": "^5.6.3",
+    "husky": "^9.1.7",
     "imagemin": "^9.0.0",
     "jsdom": "^25.0.1",
     "mini-css-extract-plugin": "^2.9.2",
@@ -68,6 +80,7 @@
     "react-router-dom": "^7.1.0",
     "regenerator-runtime": "^0.14.1",
     "rimraf": "^6.0.1",
+    "semantic-release": "^25.0.5",
     "style-loader": "^4.0.0",
     "svg-url-loader": "^8.0.0",
     "terser-webpack-plugin": "^5.3.10",
